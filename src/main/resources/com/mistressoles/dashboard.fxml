@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.mistressoles.controller.DashboardController">
+   <children>
+      <VBox prefHeight="200.0" prefWidth="100.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+         <children>
+            <MenuBar>
+              <menus>
+                <Menu mnemonicParsing="false" text="Inventario">
+                  <items>
+                    <MenuItem fx:id="miAgregarProducto" mnemonicParsing="false" onAction="#onMenuAgregarProducto" text="Agregar producto" />
+                        <MenuItem mnemonicParsing="false" text="Modificar producto" />
+                        <MenuItem mnemonicParsing="false" text="Dar de baja un producto" />
+                  </items>
+                </Menu>
+                <Menu mnemonicParsing="false" text="Movimientos">
+                  <items>
+                    <MenuItem mnemonicParsing="false" text="Registrar venta" />
+                        <MenuItem mnemonicParsing="false" text="Registrar gasto" />
+                  </items>
+                </Menu>
+                <Menu mnemonicParsing="false" text="Ayuda">
+                  <items>
+                    <MenuItem mnemonicParsing="false" text="About" />
+                  </items>
+                </Menu>
+              </menus>
+            </MenuBar>
+            <HBox alignment="CENTER" prefHeight="150.0" prefWidth="800.0" style="-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0);: : 10;" styleClass="-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0);">
+               <children>
+                  <VBox alignment="CENTER" prefHeight="150.0" prefWidth="275.0" style="-fx-background-color: #D4EDDA; -fx-background-radius: 10; -fx-border-color: #C3E6CB; -fx-border-radius: 10;" HBox.hgrow="ALWAYS">
+                     <children>
+                        <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="74.0" prefWidth="275.0" text="Ventas del día" />
+                        <Label fx:id="lblVentas" alignment="CENTER" prefHeight="74.0" prefWidth="275.0" text="\$0.00" />
+                     </children>
+                     <opaqueInsets>
+                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                     </opaqueInsets>
+                     <padding>
+                        <Insets bottom="10.0" top="10.0" />
+                     </padding>
+                  </VBox>
+                  <VBox prefHeight="150.0" prefWidth="250.0" style="-fx-background-color: #F8D7DA; -fx-background-radius: 10; -fx-border-color: #F5C6CB; -fx-background-radius: 10;" HBox.hgrow="ALWAYS">
+                     <children>
+                        <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="74.0" prefWidth="275.0" text="Gastos" />
+                        <Label fx:id="lblGastos" alignment="CENTER" prefHeight="74.0" prefWidth="275.0" text="\$0.00" />
+                     </children>
+                     <opaqueInsets>
+                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                     </opaqueInsets>
+                  </VBox>
+                  <VBox alignment="CENTER" prefHeight="150.0" prefWidth="275.0" spacing="20.0" style="-fx-background-color: #FFF3CD; -fx-background-radius: 10; -fx-border-color: #FFEEBA; -fx-border-radius: 10;" HBox.hgrow="ALWAYS">
+                     <children>
+                        <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="74.0" prefWidth="275.0" text="Stock" />
+                        <Label fx:id="lblStockCritico" alignment="CENTER" prefHeight="74.0" prefWidth="275.0" text="\$0.00" />
+                     </children>
+                     <opaqueInsets>
+                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                     </opaqueInsets>
+                  </VBox>
+               </children>
+               <VBox.margin>
+                  <Insets bottom="10.0" top="10.0" />
+               </VBox.margin>
+            </HBox>
+            <TableView fx:id="tablaProductos" prefHeight="252.0" prefWidth="800.0" VBox.vgrow="ALWAYS">
+              <columns>
+                  <TableColumn fx:id="colId" prefWidth="75.0" text="ID" />
+                <TableColumn fx:id="colNombre" prefWidth="199.0" text="Nombre" />
+                <TableColumn fx:id="colStock" prefWidth="251.0" text="Stock" />
+                  <TableColumn fx:id="colPrecio" prefWidth="274.0" text="Precio" />
+              </columns>
+            </TableView>
+         </children>
+         <padding>
+            <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+         </padding>
+      </VBox>
+   </children>
+</AnchorPane>
