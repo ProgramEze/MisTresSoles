@@ -17,7 +17,7 @@
             <Insets />
          </VBox.margin>
       </Label>
-      <TextField fx:id="txtNombre" onKeyTyped="#onEmpezarEscritura" prefWidth="200.0" promptText="&quot;Manzanas&quot;" />
+      <TextField fx:id="txtNombre" onMouseClicked="#onEmpezarEscritura" prefWidth="200.0" promptText="&quot;Manzanas&quot;" />
       <Label text="Stock inicial" />
       <TextField fx:id="txtStock" alignment="CENTER_RIGHT" prefWidth="200.0" promptText="&quot;10&quot;" />
       <Label text="Precio" />
@@ -28,6 +28,6 @@
             <Button fx:id="btnGuardar" defaultButton="true" mnemonicParsing="false" onAction="#onGuardarClick" style="-fx-background-color: #2196F3; -fx-text-fill: white;" text="Guardar" />
          </children>
       </HBox>
-      <Label fx:id="lblMensaje" alignment="CENTER" prefWidth="200.0" textAlignment="CENTER" wrapText="true" />
+      <Label fx:id="lblMensaje" alignment="CENTER" textAlignment="CENTER" wrapText="true" />
    </children>
 </VBox>
