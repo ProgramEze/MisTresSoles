@@ -10,6 +10,7 @@ public class Producto {
     private String nombre;
     private double stock; // Usamos double por el tipo REAL en la BD
     private double precio;
+    private boolean activo;
 
     // Constructor para inicializar el objeto con los datos de la consulta SQL
     public Producto(int id, String nombre, double stock, double precio) {
@@ -39,10 +40,15 @@ public class Producto {
     public double getPrecio() {
         return precio;
     }
+    
+    public boolean isActivo(){
+        return activo;
+    }
 
     // SETTERS: Útiles para futuras actualizaciones de stock o precio
     public void setId(int id) { this.id = id; }
     public void setNombre(String nombre) { this.nombre = nombre; }
     public void setStock(double stock) { this.stock = stock; }
     public void setPrecio(double precio) { this.precio = precio; }
+    public void setActivo(boolean activo) { this.activo = activo; }
 }

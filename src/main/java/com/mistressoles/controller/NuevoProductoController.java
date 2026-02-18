@@ -47,9 +47,18 @@ public class NuevoProductoController implements Initializable {
 
     @FXML
     private void onGuardarClick() {
-        // 1. Validaciones de campos vacíos
-        if (txtNombre.getText().isEmpty() || txtStock.getText().isEmpty() || txtPrecio.getText().isEmpty()) {
+        String nombre = txtNombre.getText().trim();
+
+        // 1. Validaciones básicas
+        if (nombre.isEmpty() || txtStock.getText().isEmpty() || txtPrecio.getText().isEmpty()) {
             lblMensaje.setText("⚠️ Completa todos los campos.");
+            lblMensaje.setStyle("-fx-text-fill: orange;");
+            return;
+        }
+
+        // 2. NUEVO: Validación de duplicados
+        if (existeProductoConNombre(nombre)) {
+            lblMensaje.setText("⚠️ El producto '" + nombre + "' ya existe.");
             lblMensaje.setStyle("-fx-text-fill: orange;");
             return;
         }
@@ -119,6 +128,27 @@ public class NuevoProductoController implements Initializable {
         txtStock.clear();
         txtPrecio.clear();
         txtNombre.requestFocus();
+    }
+
+    private boolean existeProductoConNombre(String nombre) {
+        // Si estamos editando y el nombre no cambió, no hace falta validar
+        if (esModificacion && nombre.equalsIgnoreCase(productoExistente.getNombre())) {
+            return false;
+        }
+
+        String sql = "SELECT COUNT(*) FROM productos WHERE nombre = ? AND activo = 1";
+        try (Connection conn = com.mistressoles.conexion.ConexionDB.conectar(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, nombre);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     @FXML
