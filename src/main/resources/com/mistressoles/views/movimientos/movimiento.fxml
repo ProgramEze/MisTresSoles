@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane prefHeight="600.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.mistressoles.controller.MovimientoController">
+    <children>
+        <SplitPane dividerPositions="0.35" layoutX="200.0" layoutY="120.0" prefHeight="600.0" prefWidth="1000.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <items>
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+                    <children>
+                        <VBox layoutX="57.0" layoutY="58.0" prefHeight="598.0" prefWidth="346.0" spacing="15.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                            <padding>
+                                <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+                            </padding>
+                            <children>
+                                <Label text="Registrar Movimiento">
+                                    <font>
+                                        <Font name="System Bold" size="18.0" />
+                                    </font>
+                                </Label>
+                        
+                                <VBox spacing="5.0">
+                                    <children>
+                                        <Label text="Tipo de Movimiento:" />
+                                        <ComboBox fx:id="cbTipo" prefWidth="300.0" promptText="Seleccionar..." />
+                                    </children>
+                                </VBox>
+
+                                <VBox spacing="5.0">
+                                    <children>
+                                        <Label text="Concepto (Ej. Pago a proveedor):" />
+                                        <TextField fx:id="txtConcepto" promptText="Descripción detallada" />
+                                    </children>
+                                </VBox>
+
+                                <VBox spacing="5.0">
+                                    <children>
+                                        <Label text="Monto ($):" />
+                                        <TextField fx:id="txtMonto" promptText="0.00" />
+                                    </children>
+                                </VBox>
+
+                                <VBox spacing="5.0">
+                                    <children>
+                                        <Label text="Categoría Contable:" />
+                                        <ComboBox fx:id="cbCategoria" prefWidth="300.0" promptText="Seleccionar..." />
+                                    </children>
+                                </VBox>
+                        
+                                <HBox alignment="CENTER" prefHeight="50.0" prefWidth="200.0">
+                                    <children>
+                                        <Label fx:id="lblMensajeForm" textFill="#2e7d32">
+                                            <font>
+                                                <Font size="13.0" />
+                                            </font>
+                                        </Label>
+                                    </children>
+                                </HBox>
+
+                                <Button fx:id="btnGuardar" mnemonicParsing="false" onAction="#guardarMovimiento" prefHeight="40.0" prefWidth="306.0" style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;" text="💾 GUARDAR REGISTRO" VBox.vgrow="ALWAYS" />
+                            </children>
+                        </VBox>
+                    </children>
+                </AnchorPane>
+            
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;">
+                    <children>
+                        <VBox layoutX="123.0" layoutY="86.0" prefHeight="598.0" prefWidth="646.0" spacing="10.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                            <padding>
+                                <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+                            </padding>
+                            <children>
+                                <Label text="Historial de Movimientos">
+                                    <font>
+                                        <Font name="System Bold" size="18.0" />
+                                    </font>
+                                </Label>
+                        
+                                <TableView fx:id="tablaMovimientos" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
+                                    <columns>
+                                        <TableColumn fx:id="colFecha" prefWidth="120.0" text="Fecha y Hora" />
+                                        <TableColumn fx:id="colTipo" prefWidth="80.0" text="Tipo" />
+                                        <TableColumn fx:id="colConcepto" prefWidth="200.0" text="Concepto" />
+                                        <TableColumn fx:id="colCategoria" prefWidth="100.0" text="Categoría" />
+                                        <TableColumn fx:id="colMonto" prefWidth="100.0" text="Monto ($)" />
+                                    </columns>
+                                </TableView>
+                            </children>
+                        </VBox>
+                    </children>
+                </AnchorPane>
+            </items>
+        </SplitPane>
+    </children>
+</AnchorPane>
