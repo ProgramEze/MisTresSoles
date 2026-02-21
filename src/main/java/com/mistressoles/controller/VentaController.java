@@ -1,9 +1,8 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.mistressoles.controller;
 
+import javafx.animation.PauseTransition;
+import javafx.scene.paint.Color;
+import javafx.util.Duration;
 import com.mistressoles.conexion.ConexionDB;
 import com.mistressoles.modelos.DetalleVenta;
 import com.mistressoles.modelos.Producto;
@@ -19,10 +18,6 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyCode;
 
-/**
- *
- * @author long_
- */
 public class VentaController implements Initializable {
 
     // --- LADO IZQUIERDO: BUSQUEDA ---
@@ -39,8 +34,6 @@ public class VentaController implements Initializable {
 
     @FXML
     private TextField txtCantidad;
-    @FXML
-    private Button btnAgregar;
 
     // --- LADO DERECHO: TICKET ---
     @FXML
@@ -56,6 +49,14 @@ public class VentaController implements Initializable {
 
     @FXML
     private Label lblTotal;
+    @FXML
+    private Label lblMensaje;
+
+    // --- VUELTO ---
+    @FXML
+    private TextField txtAbona;
+    @FXML
+    private Label lblVuelto;
 
     // --- DATOS ---
     private ObservableList<Producto> listaProductos = FXCollections.observableArrayList();
@@ -65,12 +66,22 @@ public class VentaController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         configurarTablas();
-
-        // ESTAS DOS LÍNEAS REEMPLAZAN LO QUE BORRAMOS DEL FXML
-        tablaBusqueda.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        tablaTicket.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-
         cargarProductos();
+
+        // --- NUEVO: Filtro para aceptar solo números y hasta 2 decimales ---
+        java.util.function.UnaryOperator<TextFormatter.Change> filtroDecimales = change -> {
+            String textoNuevo = change.getControlNewText();
+            // Expresión Regular: Acepta vacío, o números seguidos de un punto/coma opcional y hasta 2 dígitos
+            if (textoNuevo.matches("^\\d*([\\.,]\\d{0,2})?$")) {
+                return change; // Permite el cambio
+            }
+            return null; // Rechaza la tecla pulsada
+        };
+
+        // Aplicamos el filtro a ambos campos de texto
+        txtAbona.setTextFormatter(new TextFormatter<>(filtroDecimales));
+        txtCantidad.setTextFormatter(new TextFormatter<>(filtroDecimales));
+        // ------------------------------------------------------------------
 
         // Buscador en tiempo real
         txtBuscar.textProperty().addListener((obs, oldVal, newVal) -> {
@@ -82,52 +93,79 @@ public class VentaController implements Initializable {
             });
         });
 
-        // Al hacer doble clic en un producto de la izquierda, poner foco en cantidad
+        // Al hacer doble clic en un producto, poner foco en cantidad
         tablaBusqueda.setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) {
                 txtCantidad.requestFocus();
             }
         });
 
-        // Disparar agregarProducto al presionar Enter en cantidad
+        // Agregar producto con ENTER en cantidad
         txtCantidad.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) {
                 agregarProducto();
             }
         });
+
+        // Borrar fila del ticket con SUPRIMIR
+        tablaTicket.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.DELETE) {
+                DetalleVenta seleccionado = tablaTicket.getSelectionModel().getSelectedItem();
+                if (seleccionado != null) {
+
+                    // --- NUEVO: Devolvemos el stock a la tabla izquierda ---
+                    Producto p = seleccionado.getProducto();
+                    p.setStock(p.getStock() + seleccionado.getCantidad());
+                    tablaBusqueda.refresh();
+                    // -------------------------------------------------------
+
+                    listaTicket.remove(seleccionado);
+                    actualizarTotal();
+                }
+            }
+        });
+
+        // Calcular vuelto dinámicamente
+        txtAbona.textProperty().addListener((obs, oldVal, newVal) -> calcularVuelto());
+
+        // Cobrar al presionar ENTER en "Abona con" (Llama a la misma validación que el botón)
+        txtAbona.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                finalizarVenta();
+            }
+        });
     }
 
     private void configurarTablas() {
-        // Tabla Búsqueda
         colBusqNombre.setCellValueFactory(new PropertyValueFactory<>("nombre"));
         colBusqPrecio.setCellValueFactory(new PropertyValueFactory<>("precio"));
         colBusqStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
 
-        // Tabla Ticket
         colTicketProducto.setCellValueFactory(new PropertyValueFactory<>("nombreProducto"));
         colTicketCant.setCellValueFactory(new PropertyValueFactory<>("cantidad"));
         colTicketPrecio.setCellValueFactory(new PropertyValueFactory<>("precioUnitario"));
         colTicketSubtotal.setCellValueFactory(new PropertyValueFactory<>("subtotal"));
 
-        // Bloquear columnas de la tabla de búsqueda
+        // Bloquear columnas
         colBusqNombre.setReorderable(false);
         colBusqPrecio.setReorderable(false);
         colBusqStock.setReorderable(false);
-
-        // Bloquear columnas de la tabla del ticket
         colTicketProducto.setReorderable(false);
         colTicketCant.setReorderable(false);
         colTicketPrecio.setReorderable(false);
         colTicketSubtotal.setReorderable(false);
 
+        tablaBusqueda.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tablaTicket.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         tablaTicket.setItems(listaTicket);
     }
 
     private void cargarProductos() {
         listaProductos.clear();
-        String sql = "SELECT * FROM productos WHERE activo = 1";
+        // --- ACÁ ESTÁ EL CAMBIO: Agregamos "AND stock_actual > 0" ---
+        String sql = "SELECT * FROM productos WHERE activo = 1 AND stock_actual > 0";
+        // -------------------------------------------------------------
         try (Connection conn = ConexionDB.conectar(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
-
             while (rs.next()) {
                 listaProductos.add(new Producto(
                         rs.getInt("id_producto"), rs.getString("nombre"),
@@ -136,10 +174,15 @@ public class VentaController implements Initializable {
             }
             listaFiltrada = new FilteredList<>(listaProductos, p -> true);
             tablaBusqueda.setItems(listaFiltrada);
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    @FXML
+    private void limpiarBuscador() {
+        txtBuscar.clear();
+        txtBuscar.requestFocus();
     }
 
     @FXML
@@ -156,11 +199,21 @@ public class VentaController implements Initializable {
                 throw new NumberFormatException();
             }
 
-            // Lógica para agregar al ticket (La completamos en el próximo paso)
+            // Verificamos si alcanza el stock (que ahora se actualiza en vivo)
+            if (cant > p.getStock()) {
+                mostrarAlerta("¡Atención! No hay stock suficiente.\nStock disponible de " + p.getNombre() + ": " + p.getStock());
+                return;
+            }
+
+            // --- NUEVO: Descontamos el stock en memoria y refrescamos la tabla ---
+            p.setStock(p.getStock() - cant);
+            tablaBusqueda.refresh();
+            // ----------------------------------------------------------------------
+
             listaTicket.add(new DetalleVenta(p, cant));
             actualizarTotal();
             txtCantidad.setText("1");
-            txtBuscar.requestFocus(); // Volver al buscador para seguir vendiendo rápido
+            txtBuscar.requestFocus();
 
         } catch (NumberFormatException e) {
             mostrarAlerta("Ingresa una cantidad válida.");
@@ -170,103 +223,149 @@ public class VentaController implements Initializable {
     private void actualizarTotal() {
         double total = listaTicket.stream().mapToDouble(DetalleVenta::getSubtotal).sum();
         lblTotal.setText(String.format("$ %.2f", total));
+        calcularVuelto();
+    }
+
+    private void calcularVuelto() {
+        double total = listaTicket.stream().mapToDouble(DetalleVenta::getSubtotal).sum();
+        try {
+            String abonaStr = txtAbona.getText().replace(",", ".");
+            if (abonaStr.isEmpty()) {
+                lblVuelto.setText("Vuelto: $ 0.00");
+                lblVuelto.setTextFill(Color.BLACK);
+                return;
+            }
+            double abona = Double.parseDouble(abonaStr);
+            double vuelto = abona - total;
+
+            if (vuelto < 0) {
+                lblVuelto.setText("Faltan: $ " + String.format("%.2f", Math.abs(vuelto)));
+                lblVuelto.setTextFill(Color.RED);
+            } else {
+                lblVuelto.setText("Vuelto: $ " + String.format("%.2f", vuelto));
+                lblVuelto.setTextFill(Color.web("#005bb5"));
+            }
+        } catch (NumberFormatException e) {
+            lblVuelto.setText("Monto inválido");
+            lblVuelto.setTextFill(Color.RED);
+        }
     }
 
     @FXML
     private void finalizarVenta() {
-        // 1. Validamos que haya algo que cobrar
         if (listaTicket.isEmpty()) {
-            mostrarAlerta("El carrito está vacío, Eze.");
+            mostrarAlerta("El carrito está vacío.");
             return;
         }
 
-        // 2. Calculamos el total final sumando la columna de subtotales
         double totalVenta = listaTicket.stream().mapToDouble(DetalleVenta::getSubtotal).sum();
 
-        // 3. Preparamos las sentencias SQL
+        // --- VALIDACIÓN DE PAGO ---
+        try {
+            String abonaStr = txtAbona.getText().replace(",", ".");
+
+            // --- OPCIÓN ESTRICTA (Si preferís obligar a escribir, descomentá esto y borrá lo de abajo) ---
+            /*
+            if (abonaStr.isEmpty()) {
+                mostrarAlerta("Por favor, ingresa el monto con el que abona el cliente.");
+                txtAbona.requestFocus();
+                return;
+            }
+             */
+            // --- OPCIÓN ÁGIL (Asumimos pago exacto si está vacío) ---
+            if (abonaStr.isEmpty()) {
+                abonaStr = String.valueOf(totalVenta); // Asumimos el total
+                txtAbona.setText(abonaStr); // Lo mostramos visualmente en el campo
+            }
+
+            double abona = Double.parseDouble(abonaStr);
+            if (abona < totalVenta) {
+                mostrarAlerta("El monto ingresado es insuficiente.\nFaltan: $ " + String.format("%.2f", totalVenta - abona));
+                return; // Cortamos la ejecución acá, NO SE COBRA
+            }
+
+        } catch (NumberFormatException e) {
+            mostrarAlerta("Ingresa un monto válido para cobrar.");
+            return;
+        }
+        // ------------------------------------------
+
+        // ... Acá sigue intacto tu código de base de datos (String sqlVenta = ...) ...
         String sqlVenta = "INSERT INTO ventas (total) VALUES (?)";
         String sqlDetalle = "INSERT INTO detalle_ventas (id_venta, id_producto, cantidad, precio_unitario, subtotal) VALUES (?, ?, ?, ?, ?)";
-        // ¡OJO ACÁ! Esta línea es la que hace la magia de bajar el stock:
         String sqlStock = "UPDATE productos SET stock_actual = stock_actual - ? WHERE id_producto = ?";
 
         try (Connection conn = ConexionDB.conectar()) {
-            // INICIO DE TRANSACCIÓN: Desactivamos el guardado automático para seguridad
             conn.setAutoCommit(false);
-
             try {
-                // PASO A: Guardar la Cabecera (El total del ticket)
                 PreparedStatement pstmtVenta = conn.prepareStatement(sqlVenta, Statement.RETURN_GENERATED_KEYS);
                 pstmtVenta.setDouble(1, totalVenta);
                 pstmtVenta.executeUpdate();
 
-                // Recuperamos el ID del ticket recién creado (ej: Ticket #50)
                 ResultSet rsKeys = pstmtVenta.getGeneratedKeys();
-                int idVenta = 0;
-                if (rsKeys.next()) {
-                    idVenta = rsKeys.getInt(1);
-                } else {
-                    throw new SQLException("Error al generar el ID de venta.");
-                }
+                int idVenta = rsKeys.next() ? rsKeys.getInt(1) : 0;
 
-                // PASO B: Guardar cada producto y descontar stock
                 PreparedStatement pstmtDetalle = conn.prepareStatement(sqlDetalle);
                 PreparedStatement pstmtStock = conn.prepareStatement(sqlStock);
 
                 for (DetalleVenta dv : listaTicket) {
-                    // 1. Guardamos el detalle
                     pstmtDetalle.setInt(1, idVenta);
                     pstmtDetalle.setInt(2, dv.getProducto().getId());
                     pstmtDetalle.setDouble(3, dv.getCantidad());
                     pstmtDetalle.setDouble(4, dv.getPrecioUnitario());
                     pstmtDetalle.setDouble(5, dv.getSubtotal());
-                    pstmtDetalle.addBatch(); // Agregamos al paquete
+                    pstmtDetalle.addBatch();
 
-                    // 2. Restamos el stock (Cantidad vendida se resta al actual)
                     pstmtStock.setDouble(1, dv.getCantidad());
                     pstmtStock.setInt(2, dv.getProducto().getId());
-                    pstmtStock.addBatch(); // Agregamos al paquete
+                    pstmtStock.addBatch();
                 }
 
-                // Ejecutamos todos los cambios juntos
                 pstmtDetalle.executeBatch();
                 pstmtStock.executeBatch();
-
-                // CONFIRMACIÓN (COMMIT): Si llegamos acá, guardamos todo de verdad
                 conn.commit();
 
-                // Avisamos y limpiamos
-                mostrarInformacion("✅ ¡Venta registrada! Total: $" + totalVenta);
+                mostrarMensajeExito("✅ Venta registrada: $" + totalVenta);
                 listaTicket.clear();
                 lblTotal.setText("$ 0.00");
+                txtAbona.clear();
                 txtBuscar.requestFocus();
-
-                // Recargamos la tabla de la izquierda para ver que el stock bajó
                 cargarProductos();
 
             } catch (SQLException e) {
-                // Si algo falló, deshacemos todo (ROLLBACK) para no dejar datos corruptos
                 conn.rollback();
                 e.printStackTrace();
-                mostrarAlerta("❌ Error crítico: No se guardó nada.");
+                mostrarAlerta("❌ Error al registrar la venta.");
             }
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
     @FXML
-    private void limpiarBuscador() {
-        txtBuscar.clear();
-        txtBuscar.requestFocus(); // Devuelve el cursor al buscador para seguir tecleando
+    private void cancelarVenta() {
+        // --- NUEVO: Devolvemos el stock de TODOS los productos del carrito ---
+        for (DetalleVenta dv : listaTicket) {
+            Producto p = dv.getProducto();
+            p.setStock(p.getStock() + dv.getCantidad());
+        }
+        tablaBusqueda.refresh();
+        // ---------------------------------------------------------------------
+
+        listaTicket.clear();
+        actualizarTotal();
+        txtAbona.clear();
+        txtBuscar.requestFocus();
     }
 
-    private void mostrarInformacion(String msg) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Éxito");
-        alert.setHeaderText(null);
-        alert.setContentText(msg);
-        alert.showAndWait();
+    private void mostrarMensajeExito(String msg) {
+        if (lblMensaje != null) {
+            lblMensaje.setText(msg);
+            lblMensaje.setTextFill(Color.GREEN);
+            PauseTransition pause = new PauseTransition(Duration.seconds(4));
+            pause.setOnFinished(event -> lblMensaje.setText(""));
+            pause.play();
+        }
     }
 
     private void mostrarAlerta(String msg) {
@@ -275,11 +374,5 @@ public class VentaController implements Initializable {
         alert.setHeaderText(null);
         alert.setContentText(msg);
         alert.showAndWait();
-    }
-
-    @FXML
-    private void cancelarVenta() {
-        listaTicket.clear();
-        actualizarTotal();
     }
 }
