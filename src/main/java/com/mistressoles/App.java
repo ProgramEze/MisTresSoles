@@ -18,7 +18,7 @@ public class App extends Application {
     // 1. En el método start, usa la ruta completa con el .fxml incluido para mayor seguridad
     @Override
     public void start(Stage stage) throws IOException {
-        scene = new Scene(loadFXML("/com/mistressoles/views/ventas/venta.fxml"), 900, 600);
+        scene = new Scene(loadFXML("/com/mistressoles/views/dashboard/dashboard.fxml"), 900, 600);
         stage.setScene(scene);
         stage.setTitle("Mis Tres Soles - Gestión de Verdulería");
         stage.show();

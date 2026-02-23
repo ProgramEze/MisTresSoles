@@ -3,138 +3,97 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane prefHeight="600.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.mistressoles.controller.VentaController">
+<HBox prefHeight="700.0" prefWidth="1280.0" spacing="15.0" style="-fx-background-color: #f5f5f5;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.mistressoles.controller.VentaController">
+   <padding>
+      <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+   </padding>
    <children>
-      <SplitPane dividerPositions="0.45" layoutX="200.0" layoutY="120.0" prefHeight="600.0" prefWidth="1000.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-        <items>
-          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+      <VBox prefWidth="600.0" spacing="10.0" style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;" HBox.hgrow="ALWAYS">
+         <padding>
+            <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+         </padding>
+         <children>
+            <Label text="Buscar Producto" textFill="#333333">
+               <font><Font name="System Bold" size="18.0" /></font>
+            </Label>
+            <HBox spacing="10.0">
                <children>
-                  <VBox layoutX="57.0" layoutY="58.0" prefHeight="598.0" prefWidth="446.0" spacing="10.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                     <padding>
-                        <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
-                     </padding>
-                     <children>
-                        <Label text="1. Seleccionar Producto">
-                           <font>
-                              <Font name="System Bold" size="16.0" />
-                           </font>
-                        </Label>
-                        
-                        <HBox alignment="CENTER_LEFT" spacing="10.0">
-                           <children>
-                              <TextField fx:id="txtBuscar" promptText="Escribe para buscar..." HBox.hgrow="ALWAYS" />
-                              <Button mnemonicParsing="false" onAction="#limpiarBuscador" text="X" />
-                           </children>
-                        </HBox>
-                        
-                        <TableView fx:id="tablaBusqueda" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
-                          <columns>
-                            <TableColumn fx:id="colBusqNombre" prefWidth="75.0" text="Nombre" />
-                            <TableColumn fx:id="colBusqPrecio" prefWidth="75.0" text="Precio" />
-                            <TableColumn fx:id="colBusqStock" prefWidth="75.0" text="Stock" />
-                          </columns>
-                        </TableView>
-
-                        <HBox alignment="CENTER_LEFT" spacing="10.0">
-                           <children>
-                              <Label text="Cantidad:">
-                                 <font>
-                                    <Font size="14.0" />
-                                 </font>
-                              </Label>
-                              <TextField fx:id="txtCantidad" prefHeight="30.0" prefWidth="100.0" text="1" />
-                              <Button fx:id="btnAgregar" mnemonicParsing="false" onAction="#agregarProducto" prefHeight="30.0" prefWidth="120.0" style="-fx-background-color: #4CAF50; -fx-text-fill: white;" text="AGREGAR ➡" />
-                           </children>
-                        </HBox>
-                     </children>
-                  </VBox>
+                  <TextField fx:id="txtBuscar" prefHeight="35.0" promptText="Nombre del producto..." HBox.hgrow="ALWAYS" />
+                  <Button mnemonicParsing="false" onAction="#limpiarBuscador" prefHeight="35.0" text="Limpiar" />
                </children>
-            </AnchorPane>
-            
-          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;">
+            </HBox>
+            <TableView fx:id="tablaBusqueda" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
+              <columns>
+                <TableColumn fx:id="colBusqNombre" prefWidth="180.0" text="Producto" />
+                <TableColumn fx:id="colBusqStock" prefWidth="70.0" style="-fx-alignment: CENTER;" text="Stock" />
+                <TableColumn fx:id="colBusqUnidad" prefWidth="70.0" style="-fx-alignment: CENTER;" text="Unidad" />
+                <TableColumn fx:id="colBusqPrecio" prefWidth="90.0" style="-fx-alignment: CENTER;" text="Precio ($)" />
+              </columns>
+            </TableView>
+            <HBox alignment="CENTER_LEFT" spacing="10.0">
                <children>
-                  <VBox layoutX="123.0" layoutY="86.0" prefHeight="598.0" prefWidth="546.0" spacing="10.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                     <padding>
-                        <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
-                     </padding>
-                     <children>
-                        <Label text="2. Ticket de Venta">
-                           <font>
-                              <Font name="System Bold" size="16.0" />
-                           </font>
-                        </Label>
-                        
-                        <TableView fx:id="tablaTicket" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
-                          <columns>
-                            <TableColumn fx:id="colTicketProducto" prefWidth="150.0" text="Producto" />
-                            <TableColumn fx:id="colTicketCant" prefWidth="60.0" text="Cant." />
-                            <TableColumn fx:id="colTicketPrecio" prefWidth="80.0" text="Unitario" />
-                            <TableColumn fx:id="colTicketSubtotal" prefWidth="80.0" text="Subtotal" />
-                          </columns>
-                        </TableView>
-
-                        <HBox alignment="CENTER_RIGHT" prefHeight="60.0" spacing="15.0" style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;">
-                           <children>
-                              <Label text="TOTAL A PAGAR:">
-                                 <font>
-                                    <Font size="18.0" />
-                                 </font>
-                              </Label>
-                              <Label fx:id="lblTotal" text="\$ 0.00" textFill="#2e7d32">
-                                 <font>
-                                    <Font name="System Bold" size="36.0" />
-                                 </font>
-                              </Label>
-                           </children>
-                           <padding>
-                              <Insets right="20.0" />
-                           </padding>
-                        </HBox>
-
-                        <HBox alignment="CENTER_RIGHT" spacing="15.0">
-                           <children>
-                              <Label text="Abona con: $" />
-                              <TextField fx:id="txtAbona" prefHeight="30.0" prefWidth="100.0" promptText="0.00" />
-                              <Label fx:id="lblVuelto" text="Vuelto: $ 0.00" textFill="#005bb5">
-                                 <font>
-                                    <Font name="System Bold" size="18.0" />
-                                 </font>
-                              </Label>
-                           </children>
-                           <padding>
-                              <Insets bottom="5.0" right="20.0" top="5.0" />
-                           </padding>
-                        </HBox>
-
-                        <HBox alignment="CENTER_RIGHT" spacing="10.0">
-                           <children>
-                              <HBox alignment="CENTER_LEFT" prefHeight="40.0" prefWidth="200.0" HBox.hgrow="ALWAYS">
-                                 <children>
-                                    <Label fx:id="lblMensaje">
-                                       <font>
-                                          <Font size="14.0" />
-                                       </font>
-                                    </Label>
-                                 </children>
-                              </HBox>
-                              <Button mnemonicParsing="false" onAction="#cancelarVenta" prefHeight="40.0" prefWidth="120.0" style="-fx-background-color: #ffcccc; -fx-text-fill: red;" text="Cancelar" />
-                              <Button mnemonicParsing="false" onAction="#finalizarVenta" prefHeight="40.0" prefWidth="180.0" style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;" text="✅ COBRAR" />
-                           </children>
-                        </HBox>
-                     </children>
-                  </VBox>
+                  <Label text="Cantidad:" />
+                  <TextField fx:id="txtCantidad" prefHeight="35.0" prefWidth="80.0" text="1" />
+                  <Button mnemonicParsing="false" onAction="#agregarProducto" prefHeight="35.0" style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;" text="➡ Agregar al Ticket" />
                </children>
-            </AnchorPane>
-        </items>
-      </SplitPane>
+            </HBox>
+         </children>
+      </VBox>
+
+      <VBox prefWidth="500.0" spacing="10.0" style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;" HBox.hgrow="ALWAYS">
+         <padding>
+            <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+         </padding>
+         <children>
+            <Label text="Ticket de Venta" textFill="#333333">
+               <font><Font name="System Bold" size="18.0" /></font>
+            </Label>
+            <TableView fx:id="tablaTicket" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
+              <columns>
+                <TableColumn fx:id="colTicketProducto" prefWidth="180.0" text="Producto" />
+                <TableColumn fx:id="colTicketCant" prefWidth="70.0" style="-fx-alignment: CENTER;" text="Cant." />
+                <TableColumn fx:id="colTicketPrecio" prefWidth="90.0" style="-fx-alignment: CENTER;" text="Precio U." />
+                <TableColumn fx:id="colTicketSubtotal" prefWidth="90.0" style="-fx-alignment: CENTER;" text="Subtotal" />
+              </columns>
+            </TableView>
+            <HBox alignment="CENTER_RIGHT">
+               <children>
+                  <Label text="TOTAL: " textFill="#333333">
+                     <font><Font name="System Bold" size="24.0" /></font>
+                  </Label>
+                  <Label fx:id="lblTotal" text="\$ 0.00" textFill="#2e7d32">
+                     <font><Font name="System Bold" size="32.0" /></font>
+                  </Label>
+               </children>
+            </HBox>
+            <HBox alignment="CENTER_RIGHT" spacing="10.0">
+               <children>
+                  <Label text="Abona con: $" />
+                  <TextField fx:id="txtAbona" prefHeight="35.0" prefWidth="100.0" promptText="0.00" />
+                  <Label fx:id="lblVuelto" prefWidth="150.0" text="Vuelto: $ 0.00">
+                     <font><Font name="System Bold" size="14.0" /></font>
+                  </Label>
+               </children>
+            </HBox>
+            <HBox alignment="CENTER" spacing="15.0">
+               <children>
+                  <Button mnemonicParsing="false" onAction="#cancelarVenta" prefHeight="45.0" prefWidth="150.0" style="-fx-background-color: #f44336; -fx-text-fill: white; -fx-font-weight: bold;" text="Cancelar Venta" />
+                  <Button mnemonicParsing="false" onAction="#finalizarVenta" prefHeight="45.0" prefWidth="250.0" style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px;" text="COBRAR" />
+               </children>
+            </HBox>
+            <HBox alignment="CENTER">
+               <children>
+                  <Label fx:id="lblMensaje" />
+               </children>
+            </HBox>
+         </children>
+      </VBox>
    </children>
-</AnchorPane>
+</HBox>

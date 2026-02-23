@@ -5,43 +5,50 @@ import java.net.URL;
 import java.sql.*;
 import java.util.ResourceBundle;
 import java.util.function.UnaryOperator;
+import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
-import javafx.scene.control.TextFormatter;
+import javafx.scene.control.*;
 import javafx.stage.Stage;
 
 public class NuevoProductoController implements Initializable {
 
-    @FXML
-    private TextField txtNombre, txtStock, txtPrecio;
-    @FXML
-    private Button btnCancelar;
-    @FXML
-    private Label lblMensaje;
-    @FXML
-    private Button btnGuardar; // Asegúrate que en Scene Builder el ID sea 'btnGuardar'
-    private Producto productoExistente; // Para saber qué estamos editando
+    @FXML private TextField txtNombre, txtStock, txtPrecio, txtStockMinimo;
+    @FXML private ComboBox<String> cbCategoria, cbUnidad;
+    @FXML private Button btnCancelar, btnGuardar;
+    @FXML private Label lblMensaje;
+    
+    private Producto productoExistente;
     private boolean esModificacion = false;
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         configurarFiltroNumerico(txtStock);
         configurarFiltroNumerico(txtPrecio);
+        configurarFiltroNumerico(txtStockMinimo);
+        
+        // Llenar ComboBoxes
+        cbCategoria.setItems(FXCollections.observableArrayList("Verduras", "Frutas", "Almacén", "Bebidas", "Otros"));
+        cbUnidad.setItems(FXCollections.observableArrayList("kg", "unid"));
+        
+        // Valores por defecto
+        cbUnidad.setValue("kg");
+        txtStockMinimo.setText("2.0");
+
+        btnCancelar.setCancelButton(true); // Cierra con ESC
     }
 
-    // Método que llamará el Dashboard para pasarnos los datos
     public void setProducto(Producto p) {
         this.productoExistente = p;
         this.esModificacion = true;
 
         txtNombre.setText(p.getNombre());
+        cbCategoria.setValue(p.getCategoria());
         txtStock.setText(String.valueOf(p.getStock()));
+        cbUnidad.setValue(p.getUnidadMedida());
         txtPrecio.setText(String.valueOf(p.getPrecio()));
+        txtStockMinimo.setText(String.valueOf(p.getStockMinimo()));
 
-        // Cambiamos el texto del botón si es edición
         btnGuardar.setText("Modificar");
     }
 
@@ -49,56 +56,48 @@ public class NuevoProductoController implements Initializable {
     private void onGuardarClick() {
         String nombre = txtNombre.getText().trim();
 
-        // 1. Validaciones básicas
-        if (nombre.isEmpty() || txtStock.getText().isEmpty() || txtPrecio.getText().isEmpty()) {
+        if (nombre.isEmpty() || txtStock.getText().isEmpty() || txtPrecio.getText().isEmpty() || 
+            txtStockMinimo.getText().isEmpty() || cbCategoria.getValue() == null || cbUnidad.getValue() == null) {
             lblMensaje.setText("⚠️ Completa todos los campos.");
             lblMensaje.setStyle("-fx-text-fill: orange;");
             return;
         }
 
-        // 2. NUEVO: Validación de duplicados
         if (existeProductoConNombre(nombre)) {
             lblMensaje.setText("⚠️ El producto '" + nombre + "' ya existe.");
             lblMensaje.setStyle("-fx-text-fill: orange;");
             return;
         }
 
-        // 2. Definimos el SQL según la operación (Nuevo o Modificación)
         String sql;
         if (esModificacion) {
-            sql = "UPDATE productos SET nombre = ?, stock_actual = ?, precio_venta = ? WHERE id_producto = ?";
+            sql = "UPDATE productos SET nombre = ?, categoria = ?, stock_actual = ?, unidad_medida = ?, precio_venta = ?, stock_minimo = ? WHERE id_producto = ?";
         } else {
-            sql = "INSERT INTO productos (nombre, stock_actual, precio_venta) VALUES (?, ?, ?)";
+            sql = "INSERT INTO productos (nombre, categoria, stock_actual, unidad_medida, precio_venta, stock_minimo) VALUES (?, ?, ?, ?, ?, ?)";
         }
 
-        try (Connection conn = com.mistressoles.conexion.ConexionDB.conectar(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = com.mistressoles.conexion.ConexionDB.conectar(); 
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            // 3. Pasamos los parámetros comunes
             pstmt.setString(1, txtNombre.getText());
-            pstmt.setDouble(2, Double.parseDouble(txtStock.getText()));
-            pstmt.setDouble(3, Double.parseDouble(txtPrecio.getText()));
+            pstmt.setString(2, cbCategoria.getValue());
+            pstmt.setDouble(3, Double.parseDouble(txtStock.getText()));
+            pstmt.setString(4, cbUnidad.getValue());
+            pstmt.setDouble(5, Double.parseDouble(txtPrecio.getText()));
+            pstmt.setDouble(6, Double.parseDouble(txtStockMinimo.getText()));
 
-            // 4. Si es modificación, agregamos el ID para el WHERE
             if (esModificacion) {
-                pstmt.setInt(4, productoExistente.getId());
+                pstmt.setInt(7, productoExistente.getId());
             }
 
             int filasAfectadas = pstmt.executeUpdate();
 
             if (filasAfectadas > 0) {
                 if (esModificacion) {
-                    // Si es edición, cerramos porque el usuario ya terminó con ese producto
-                    System.out.println("✅ Modificación exitosa.");
                     cerrarVentana();
                 } else {
-                    // Si es un ALTA, solo limpiamos y mostramos el mensaje
-                    System.out.println("✅ Alta exitosa.");
-
-                    // Primero limpiamos para que el foco no nos borre el aviso
                     limpiarCampos();
-
-                    // Mostramos el mensaje de éxito que tanto nos costó
-                    lblMensaje.setText("El producto ha sido dado de alta correctamente.");
+                    lblMensaje.setText("✅ Producto dado de alta correctamente.");
                     lblMensaje.setStyle("-fx-text-fill: green;");
                 }
             }
@@ -111,7 +110,6 @@ public class NuevoProductoController implements Initializable {
             lblMensaje.setStyle("-fx-text-fill: red;");
         }
     }
-    // Método auxiliar para cerrar la ventana
 
     private void cerrarVentana() {
         Stage stage = (Stage) btnCancelar.getScene().getWindow();
@@ -127,21 +125,21 @@ public class NuevoProductoController implements Initializable {
         txtNombre.clear();
         txtStock.clear();
         txtPrecio.clear();
+        cbCategoria.setValue(null);
+        cbUnidad.setValue("kg");
+        txtStockMinimo.setText("2.0");
         txtNombre.requestFocus();
     }
 
     private boolean existeProductoConNombre(String nombre) {
-        // Si estamos editando y el nombre no cambió, no hace falta validar
         if (esModificacion && nombre.equalsIgnoreCase(productoExistente.getNombre())) {
             return false;
         }
-
         String sql = "SELECT COUNT(*) FROM productos WHERE nombre = ? AND activo = 1";
-        try (Connection conn = com.mistressoles.conexion.ConexionDB.conectar(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
+        try (Connection conn = com.mistressoles.conexion.ConexionDB.conectar(); 
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, nombre);
             ResultSet rs = pstmt.executeQuery();
-
             if (rs.next()) {
                 return rs.getInt(1) > 0;
             }
@@ -153,7 +151,6 @@ public class NuevoProductoController implements Initializable {
 
     @FXML
     private void onEmpezarEscritura() {
-        // Vinculado a On Mouse Clicked en Scene Builder
         lblMensaje.setText("");
     }
 
