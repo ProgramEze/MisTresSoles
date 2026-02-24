@@ -13,29 +13,32 @@ import javafx.stage.Stage;
 
 public class NuevoProductoController implements Initializable {
 
-    @FXML private TextField txtNombre, txtStock, txtPrecio, txtStockMinimo;
-    @FXML private ComboBox<String> cbCategoria, cbUnidad;
-    @FXML private Button btnCancelar, btnGuardar;
-    @FXML private Label lblMensaje;
-    
+    @FXML
+    private TextField txtNombre, txtStock, txtPrecio, txtStockMinimo;
+    @FXML
+    private ComboBox<String> cbCategoria, cbUnidad;
+    @FXML
+    private Button btnCancelar, btnGuardar;
+    @FXML
+    private Label lblMensaje;
+
     private Producto productoExistente;
     private boolean esModificacion = false;
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        configurarFiltroNumerico(txtStock);
-        configurarFiltroNumerico(txtPrecio);
-        configurarFiltroNumerico(txtStockMinimo);
-        
-        // Llenar ComboBoxes
+        // Filtros estrictos separados
+        configurarFiltroStock(txtStock);
+        configurarFiltroStock(txtStockMinimo);
+        configurarFiltroPrecio(txtPrecio);
+
         cbCategoria.setItems(FXCollections.observableArrayList("Verduras", "Frutas", "Almacén", "Bebidas", "Otros"));
         cbUnidad.setItems(FXCollections.observableArrayList("kg", "unid"));
-        
-        // Valores por defecto
-        cbUnidad.setValue("kg");
-        txtStockMinimo.setText("2.0");
 
-        btnCancelar.setCancelButton(true); // Cierra con ESC
+        cbUnidad.setValue("kg");
+        txtStockMinimo.setText("2.000"); // 3 decimales por defecto
+
+        btnCancelar.setCancelButton(true);
     }
 
     public void setProducto(Producto p) {
@@ -44,10 +47,18 @@ public class NuevoProductoController implements Initializable {
 
         txtNombre.setText(p.getNombre());
         cbCategoria.setValue(p.getCategoria());
-        txtStock.setText(String.valueOf(p.getStock()));
         cbUnidad.setValue(p.getUnidadMedida());
-        txtPrecio.setText(String.valueOf(p.getPrecio()));
-        txtStockMinimo.setText(String.valueOf(p.getStockMinimo()));
+
+        // --- Formateo dinámico al cargar para modificar ---
+        if ("unid".equalsIgnoreCase(p.getUnidadMedida())) {
+            txtStock.setText(String.format("%.0f", p.getStock()));
+            txtStockMinimo.setText(String.format("%.0f", p.getStockMinimo()));
+        } else {
+            txtStock.setText(String.format("%.3f", p.getStock()).replace(",", "."));
+            txtStockMinimo.setText(String.format("%.3f", p.getStockMinimo()).replace(",", "."));
+        }
+
+        txtPrecio.setText(String.format("%.2f", p.getPrecio()).replace(",", "."));
 
         btnGuardar.setText("Modificar");
     }
@@ -56,8 +67,8 @@ public class NuevoProductoController implements Initializable {
     private void onGuardarClick() {
         String nombre = txtNombre.getText().trim();
 
-        if (nombre.isEmpty() || txtStock.getText().isEmpty() || txtPrecio.getText().isEmpty() || 
-            txtStockMinimo.getText().isEmpty() || cbCategoria.getValue() == null || cbUnidad.getValue() == null) {
+        if (nombre.isEmpty() || txtStock.getText().isEmpty() || txtPrecio.getText().isEmpty()
+                || txtStockMinimo.getText().isEmpty() || cbCategoria.getValue() == null || cbUnidad.getValue() == null) {
             lblMensaje.setText("⚠️ Completa todos los campos.");
             lblMensaje.setStyle("-fx-text-fill: orange;");
             return;
@@ -76,15 +87,14 @@ public class NuevoProductoController implements Initializable {
             sql = "INSERT INTO productos (nombre, categoria, stock_actual, unidad_medida, precio_venta, stock_minimo) VALUES (?, ?, ?, ?, ?, ?)";
         }
 
-        try (Connection conn = com.mistressoles.conexion.ConexionDB.conectar(); 
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = com.mistressoles.conexion.ConexionDB.conectar(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, txtNombre.getText());
             pstmt.setString(2, cbCategoria.getValue());
-            pstmt.setDouble(3, Double.parseDouble(txtStock.getText()));
+            pstmt.setDouble(3, Double.parseDouble(txtStock.getText().replace(",", ".")));
             pstmt.setString(4, cbUnidad.getValue());
-            pstmt.setDouble(5, Double.parseDouble(txtPrecio.getText()));
-            pstmt.setDouble(6, Double.parseDouble(txtStockMinimo.getText()));
+            pstmt.setDouble(5, Double.parseDouble(txtPrecio.getText().replace(",", ".")));
+            pstmt.setDouble(6, Double.parseDouble(txtStockMinimo.getText().replace(",", ".")));
 
             if (esModificacion) {
                 pstmt.setInt(7, productoExistente.getId());
@@ -127,7 +137,7 @@ public class NuevoProductoController implements Initializable {
         txtPrecio.clear();
         cbCategoria.setValue(null);
         cbUnidad.setValue("kg");
-        txtStockMinimo.setText("2.0");
+        txtStockMinimo.setText("2.000");
         txtNombre.requestFocus();
     }
 
@@ -136,8 +146,7 @@ public class NuevoProductoController implements Initializable {
             return false;
         }
         String sql = "SELECT COUNT(*) FROM productos WHERE nombre = ? AND activo = 1";
-        try (Connection conn = com.mistressoles.conexion.ConexionDB.conectar(); 
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = com.mistressoles.conexion.ConexionDB.conectar(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, nombre);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
@@ -154,10 +163,24 @@ public class NuevoProductoController implements Initializable {
         lblMensaje.setText("");
     }
 
-    private void configurarFiltroNumerico(TextField campo) {
+    // --- FILTROS ESTRICTOS ---
+    private void configurarFiltroStock(TextField campo) {
         UnaryOperator<TextFormatter.Change> filtro = cambio -> {
             String nuevoTexto = cambio.getControlNewText();
-            if (nuevoTexto.matches("\\d*(\\.\\d*)?")) {
+            // Permite hasta 3 decimales para pesos en balanza
+            if (nuevoTexto.matches("^\\d*([\\.,]\\d{0,3})?$")) {
+                return cambio;
+            }
+            return null;
+        };
+        campo.setTextFormatter(new TextFormatter<>(filtro));
+    }
+
+    private void configurarFiltroPrecio(TextField campo) {
+        UnaryOperator<TextFormatter.Change> filtro = cambio -> {
+            String nuevoTexto = cambio.getControlNewText();
+            // Permite solo 2 decimales para dinero
+            if (nuevoTexto.matches("^\\d*([\\.,]\\d{0,2})?$")) {
                 return cambio;
             }
             return null;

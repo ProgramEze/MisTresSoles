@@ -27,22 +27,36 @@ import java.util.ResourceBundle;
 
 public class DashboardController implements Initializable {
 
-    @FXML private Label lblVentasDia;
-    @FXML private Label lblGastosDia;
-    @FXML private Label lblGananciaDia;
-    @FXML private Label lblStockCritico;
+    @FXML
+    private Label lblVentasDia;
+    @FXML
+    private Label lblGastosDia;
+    @FXML
+    private Label lblGananciaDia;
+    @FXML
+    private Label lblStockCritico;
 
-    @FXML private TextField txtBuscar;
-    @FXML private TextField txtPrecioMin;
-    @FXML private TextField txtPrecioMax;
-    @FXML private ComboBox<String> cbEstado;
+    @FXML
+    private TextField txtBuscar;
+    @FXML
+    private TextField txtPrecioMin;
+    @FXML
+    private TextField txtPrecioMax;
+    @FXML
+    private ComboBox<String> cbEstado;
 
-    @FXML private TableView<Producto> tablaProductos;
-    @FXML private TableColumn<Producto, String> colNombre;
-    @FXML private TableColumn<Producto, String> colCategoria;
-    @FXML private TableColumn<Producto, Double> colStock;
-    @FXML private TableColumn<Producto, String> colUnidad;
-    @FXML private TableColumn<Producto, Double> colPrecio;
+    @FXML
+    private TableView<Producto> tablaProductos;
+    @FXML
+    private TableColumn<Producto, String> colNombre;
+    @FXML
+    private TableColumn<Producto, String> colCategoria;
+    @FXML
+    private TableColumn<Producto, Double> colStock;
+    @FXML
+    private TableColumn<Producto, String> colUnidad;
+    @FXML
+    private TableColumn<Producto, Double> colPrecio;
 
     private ObservableList<Producto> listaProductos = FXCollections.observableArrayList();
     private FilteredList<Producto> listaFiltrada;
@@ -69,8 +83,8 @@ public class DashboardController implements Initializable {
         colPrecio.setReorderable(false);
 
         tablaProductos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        
-        // --- Formateo Inteligente de Stock (Vista) ---
+
+        // --- PRECISIÓN DE 3 DECIMALES PARA EL STOCK ---
         colStock.setCellFactory(columna -> new TableCell<Producto, Double>() {
             @Override
             protected void updateItem(Double stock, boolean empty) {
@@ -80,15 +94,14 @@ public class DashboardController implements Initializable {
                 } else {
                     Producto p = getTableRow().getItem();
                     if ("unid".equalsIgnoreCase(p.getUnidadMedida())) {
-                        setText(String.format("%.0f", stock)); // Sin decimales
+                        setText(String.format("%.0f", stock));
                     } else {
-                        setText(String.format("%.2f", stock)); // Con 2 decimales
+                        setText(String.format("%.3f", stock)); // Actualizado a 3 decimales
                     }
                 }
             }
         });
 
-        // --- Formatear Precio con 2 decimales fijos ---
         colPrecio.setCellFactory(columna -> new TableCell<Producto, Double>() {
             @Override
             protected void updateItem(Double precio, boolean empty) {
@@ -101,18 +114,20 @@ public class DashboardController implements Initializable {
             }
         });
 
-        // --- Ordenamiento Inteligente de Stock (Enteros vs Decimales) ---
         colStock.setComparator((stock1, stock2) -> {
             boolean esEntero1 = (stock1 % 1 == 0);
             boolean esEntero2 = (stock2 % 1 == 0);
-            
-            if (esEntero1 && !esEntero2) return -1; 
-            if (!esEntero1 && esEntero2) return 1;  
-            
+
+            if (esEntero1 && !esEntero2) {
+                return -1;
+            }
+            if (!esEntero1 && esEntero2) {
+                return 1;
+            }
+
             return Double.compare(stock1, stock2);
         });
-        
-        // Colores para alertas de stock
+
         tablaProductos.setRowFactory(tv -> new TableRow<Producto>() {
             @Override
             protected void updateItem(Producto item, boolean empty) {
@@ -120,16 +135,15 @@ public class DashboardController implements Initializable {
                 if (item == null || empty) {
                     setStyle("");
                 } else if (item.getStock() <= 0) {
-                    setStyle("-fx-background-color: #ffcdd2;"); 
-                } else if (item.getStock() <= item.getStockMinimo()) { 
-                    setStyle("-fx-background-color: #ffe082;"); 
+                    setStyle("-fx-background-color: #ffcdd2;");
+                } else if (item.getStock() <= item.getStockMinimo()) {
+                    setStyle("-fx-background-color: #ffe082;");
                 } else {
-                    setStyle(""); 
+                    setStyle("");
                 }
             }
         });
 
-        // Menú Contextual
         ContextMenu contextMenu = new ContextMenu();
         MenuItem miAgregar = new MenuItem("Agregar Producto");
         MenuItem miModificar = new MenuItem("Modificar Producto");
@@ -166,36 +180,34 @@ public class DashboardController implements Initializable {
 
     private void cargarProductos() {
         listaProductos.clear();
-        String sql = "SELECT * FROM productos"; 
-        
-        try (Connection conn = ConexionDB.conectar(); 
-             Statement stmt = conn.createStatement(); 
-             ResultSet rs = stmt.executeQuery(sql)) {
-             
+        String sql = "SELECT * FROM productos";
+
+        try (Connection conn = ConexionDB.conectar(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+
             while (rs.next()) {
                 Producto p = new Producto(
-                    rs.getInt("id_producto"), 
-                    rs.getString("nombre"),
-                    rs.getString("categoria"),
-                    rs.getDouble("stock_actual"),
-                    rs.getString("unidad_medida"),
-                    rs.getDouble("precio_venta"),
-                    rs.getDouble("stock_minimo"),
-                    rs.getString("imagen_path")
+                        rs.getInt("id_producto"),
+                        rs.getString("nombre"),
+                        rs.getString("categoria"),
+                        rs.getDouble("stock_actual"),
+                        rs.getString("unidad_medida"),
+                        rs.getDouble("precio_venta"),
+                        rs.getDouble("stock_minimo"),
+                        rs.getString("imagen_path")
                 );
                 p.setActivo(rs.getInt("activo") == 1);
                 listaProductos.add(p);
             }
-            
+
             listaFiltrada = new FilteredList<>(listaProductos, p -> true);
             SortedList<Producto> listaOrdenada = new SortedList<>(listaFiltrada);
             listaOrdenada.comparatorProperty().bind(tablaProductos.comparatorProperty());
-            
+
             tablaProductos.setItems(listaOrdenada);
-            onFiltrarProductos(); 
-            
-        } catch (SQLException e) { 
-            e.printStackTrace(); 
+            onFiltrarProductos();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
@@ -208,15 +220,21 @@ public class DashboardController implements Initializable {
         try (Connection conn = ConexionDB.conectar(); Statement stmt = conn.createStatement()) {
             String sqlIngresos = "SELECT SUM(monto) AS total FROM movimientos WHERE tipo = 'INGRESO' AND date(fecha) = date('now', 'localtime')";
             ResultSet rsIngresos = stmt.executeQuery(sqlIngresos);
-            if (rsIngresos.next()) ingresosHoy = rsIngresos.getDouble("total");
+            if (rsIngresos.next()) {
+                ingresosHoy = rsIngresos.getDouble("total");
+            }
 
             String sqlGastos = "SELECT SUM(monto) AS total FROM movimientos WHERE tipo = 'GASTO' AND date(fecha) = date('now', 'localtime')";
             ResultSet rsGastos = stmt.executeQuery(sqlGastos);
-            if (rsGastos.next()) gastosHoy = rsGastos.getDouble("total");
+            if (rsGastos.next()) {
+                gastosHoy = rsGastos.getDouble("total");
+            }
 
             String sqlStock = "SELECT COUNT(*) AS cantidad FROM productos WHERE stock_actual <= stock_minimo AND activo = 1";
             ResultSet rsStock = stmt.executeQuery(sqlStock);
-            if (rsStock.next()) productosEnAlerta = rsStock.getInt("cantidad");
+            if (rsStock.next()) {
+                productosEnAlerta = rsStock.getInt("cantidad");
+            }
 
         } catch (SQLException e) {
             System.out.println("Error al cargar métricas del día.");
@@ -224,7 +242,7 @@ public class DashboardController implements Initializable {
 
         lblVentasDia.setText(String.format("$ %.2f", ingresosHoy));
         lblGastosDia.setText(String.format("$ %.2f", gastosHoy));
-        
+
         double ganancia = ingresosHoy - gastosHoy;
         lblGananciaDia.setText(String.format("$ %.2f", ganancia));
         lblGananciaDia.setTextFill(ganancia < 0 ? Color.RED : Color.web("#1565c0"));
@@ -303,7 +321,7 @@ public class DashboardController implements Initializable {
 
         boolean estaActivo = seleccionado.isActivo();
         String accion = estaActivo ? "Dar de baja" : "Dar de alta";
-        int nuevoEstado = estaActivo ? 0 : 1; 
+        int nuevoEstado = estaActivo ? 0 : 1;
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Confirmar " + accion);
@@ -313,23 +331,22 @@ public class DashboardController implements Initializable {
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
             String sql = "UPDATE productos SET activo = ? WHERE id_producto = ?";
-            try (Connection conn = ConexionDB.conectar();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
+            try (Connection conn = ConexionDB.conectar(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
                 pstmt.setInt(1, nuevoEstado);
                 pstmt.setInt(2, seleccionado.getId());
                 pstmt.executeUpdate();
-                
-                cargarProductos(); 
+
+                cargarProductos();
                 calcularMetricasDelDia();
                 mostrarAlerta("Producto " + (estaActivo ? "dado de baja" : "dado de alta") + " correctamente.", Alert.AlertType.INFORMATION);
-                
+
             } catch (SQLException e) {
                 e.printStackTrace();
             }
         }
     }
-    
+
     private void mostrarAlerta(String msg, Alert.AlertType tipo) {
         Alert alert = new Alert(tipo);
         alert.setTitle("Sistema");
@@ -340,37 +357,47 @@ public class DashboardController implements Initializable {
 
     @FXML
     private void onFiltrarProductos() {
-        if (listaFiltrada == null) return;
+        if (listaFiltrada == null) {
+            return;
+        }
 
         listaFiltrada.setPredicate(producto -> {
-            
-            // --- Búsqueda en Nombre, Categoría o Stock ---
             String textoBusqueda = txtBuscar.getText().toLowerCase();
             boolean coincideNombre = producto.getNombre().toLowerCase().contains(textoBusqueda);
             boolean coincideCategoria = producto.getCategoria().toLowerCase().contains(textoBusqueda);
             boolean coincideStock = String.valueOf(producto.getStock()).contains(textoBusqueda);
 
             if (!textoBusqueda.isEmpty() && !coincideNombre && !coincideCategoria && !coincideStock) {
-                return false; 
+                return false;
             }
 
             try {
                 if (!txtPrecioMin.getText().isEmpty()) {
                     double min = Double.parseDouble(txtPrecioMin.getText());
-                    if (producto.getPrecio() < min) return false;
+                    if (producto.getPrecio() < min) {
+                        return false;
+                    }
                 }
                 if (!txtPrecioMax.getText().isEmpty()) {
                     double max = Double.parseDouble(txtPrecioMax.getText());
-                    if (producto.getPrecio() > max) return false;
+                    if (producto.getPrecio() > max) {
+                        return false;
+                    }
                 }
             } catch (NumberFormatException e) {
             }
 
             String estado = cbEstado.getValue();
             if (estado != null) {
-                if (estado.equals("Sin stock") && producto.getStock() > 0) return false;
-                if (estado.equals("Activos") && !producto.isActivo()) return false;
-                if (estado.equals("Inactivos") && producto.isActivo()) return false;
+                if (estado.equals("Sin stock") && producto.getStock() > 0) {
+                    return false;
+                }
+                if (estado.equals("Activos") && !producto.isActivo()) {
+                    return false;
+                }
+                if (estado.equals("Inactivos") && producto.isActivo()) {
+                    return false;
+                }
             }
 
             return true;
@@ -382,7 +409,7 @@ public class DashboardController implements Initializable {
         txtBuscar.clear();
         txtPrecioMin.clear();
         txtPrecioMax.clear();
-        cbEstado.setValue("Activos"); 
+        cbEstado.setValue("Activos");
         onFiltrarProductos();
     }
 }
