@@ -46,3 +46,7 @@ public class App extends Application {
     }
 
 }
+/*
+Agregar botón agregar compra
+Agregar caja
+*/
