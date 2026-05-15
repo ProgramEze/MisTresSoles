@@ -1,20 +1,55 @@
-<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="mistressoles.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="0"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="2464"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title="detalle_movimiento" custom_title="0" dock_id="1" table="4,18:maindetalle_movimiento"/><dock_state state="000000ff00000000fd00000001000000020000000000000000fc0100000001fb000000160064006f0063006b00420072006f00770073006500310100000000ffffffff0000011e00ffffff000000000000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings/></tab_browse><tab_sql><sql name="SQL 1*">-- Tabla cabecera: Guarda la fecha y el total del ticket
-CREATE TABLE &quot;ventas&quot; (
-	&quot;id_venta&quot;	INTEGER,
-	&quot;fecha&quot;	TEXT DEFAULT CURRENT_TIMESTAMP,
-	&quot;total&quot;	REAL,
-	PRIMARY KEY(&quot;id_venta&quot; AUTOINCREMENT)
-);
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="mistressoles.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="2464"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title="detalle_movimiento" custom_title="0" dock_id="1" table="4,18:maindetalle_movimiento"/><dock_state state="000000ff00000000fd00000001000000020000000000000000fc0100000001fb000000160064006f0063006b00420072006f00770073006500310100000000ffffffff0000011e00ffffff000000000000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings/></tab_browse><tab_sql><sql name="SQL 1*">-- 1. LIMPIEZA DE TRANSACCIONES (Los &quot;Hijos&quot;)
+DELETE FROM detalle_ventas;
+DELETE FROM detalle_movimiento;
+DELETE FROM ventas;
+DELETE FROM movimientos;
 
--- Tabla detalle: Guarda cada ítem del ticket
-CREATE TABLE &quot;detalle_ventas&quot; (
-	&quot;id_detalle&quot;	INTEGER,
-	&quot;id_venta&quot;	INTEGER,
-	&quot;id_producto&quot;	INTEGER,
-	&quot;cantidad&quot;	REAL,
-	&quot;precio_unitario&quot;	REAL,
-	&quot;subtotal&quot;	REAL,
-	PRIMARY KEY(&quot;id_detalle&quot; AUTOINCREMENT),
-	FOREIGN KEY(&quot;id_venta&quot;) REFERENCES &quot;ventas&quot;(&quot;id_venta&quot;),
-	FOREIGN KEY(&quot;id_producto&quot;) REFERENCES &quot;productos&quot;(&quot;id_producto&quot;)
-);</sql><current_tab id="0"/></tab_sql></sqlb_project>
+-- 2. LIMPIEZA DE CATÁLOGO (Los &quot;Padres&quot;)
+DELETE FROM productos;
+
+-- 3. RESETEO DE TODOS LOS CONTADORES (IDs vuelven a 1)
+UPDATE sqlite_sequence SET seq = 0 WHERE name = 'ventas';
+UPDATE sqlite_sequence SET seq = 0 WHERE name = 'detalle_ventas';
+UPDATE sqlite_sequence SET seq = 0 WHERE name = 'movimientos';
+UPDATE sqlite_sequence SET seq = 0 WHERE name = 'detalle_movimiento';
+UPDATE sqlite_sequence SET seq = 0 WHERE name = 'productos';
+
+-- 4. CARGA INICIAL DE LA VERDULERÍA Y ALMACÉN
+INSERT INTO productos (nombre, categoria, stock_actual, unidad_medida, precio_venta, stock_minimo, imagen_path, activo) VALUES
+-- VERDURAS
+('Papa Negra', 'Verduras', 50.0, 'kg', 800.0, 10.0, '', 1),
+('Cebolla', 'Verduras', 30.0, 'kg', 1200.0, 5.0, '', 1),
+('Zanahoria', 'Verduras', 20.0, 'kg', 1000.0, 5.0, '', 1),
+('Tomate Perita', 'Verduras', 15.0, 'kg', 1500.0, 3.0, '', 1),
+('Lechuga Criolla', 'Verduras', 10.0, 'kg', 2000.0, 2.0, '', 1),
+('Zapallo Anco', 'Verduras', 40.0, 'kg', 900.0, 10.0, '', 1),
+('Pimiento Rojo', 'Verduras', 8.0, 'kg', 3500.0, 2.0, '', 1),
+('Ajo', 'Verduras', 50.0, 'unid', 300.0, 10.0, '', 1),
+('Batata', 'Verduras', 25.0, 'kg', 1100.0, 5.0, '', 1),
+('Acelga', 'Verduras', 15.0, 'unid', 800.0, 3.0, '', 1),
+
+-- FRUTAS
+('Manzana Roja', 'Frutas', 20.0, 'kg', 2200.0, 5.0, '', 1),
+('Banana Ecuador', 'Frutas', 35.0, 'kg', 1800.0, 10.0, '', 1),
+('Naranja para Jugo', 'Frutas', 40.0, 'kg', 1300.0, 10.0, '', 1),
+('Limón', 'Frutas', 15.0, 'kg', 1000.0, 3.0, '', 1),
+('Pera Williams', 'Frutas', 18.0, 'kg', 1900.0, 5.0, '', 1),
+('Durazno', 'Frutas', 12.0, 'kg', 2500.0, 3.0, '', 1),
+
+-- ALMACÉN
+('Arroz Blanco 1kg', 'Almacén', 24.0, 'unid', 1500.0, 5.0, '', 1),
+('Fideos Tallarines 500g', 'Almacén', 30.0, 'unid', 1200.0, 10.0, '', 1),
+('Aceite de Girasol 900ml', 'Almacén', 15.0, 'unid', 2100.0, 4.0, '', 1),
+('Azúcar Blanca 1kg', 'Almacén', 40.0, 'unid', 1100.0, 10.0, '', 1),
+('Yerba Mate 500g', 'Almacén', 20.0, 'unid', 2800.0, 5.0, '', 1),
+('Puré de Tomate 520g', 'Almacén', 35.0, 'unid', 850.0, 10.0, '', 1),
+('Sal Fina 500g', 'Almacén', 15.0, 'unid', 600.0, 3.0, '', 1),
+('Harina de Trigo 000 1kg', 'Almacén', 30.0, 'unid', 950.0, 8.0, '', 1),
+('Galletitas Surtidas 400g', 'Almacén', 12.0, 'unid', 1600.0, 4.0, '', 1),
+
+-- BEBIDAS Y OTROS
+('Coca-Cola Sabor Original 2L', 'Bebidas', 24.0, 'unid', 3200.0, 6.0, '', 1),
+('Agua Mineral Sin Gas 1.5L', 'Bebidas', 30.0, 'unid', 1100.0, 10.0, '', 1),
+('Jugo Naranja 1L', 'Bebidas', 15.0, 'unid', 1800.0, 5.0, '', 1),
+('Huevos Docena', 'Otros', 20.0, 'unid', 2500.0, 5.0, '', 1),
+('Carbón 3kg', 'Otros', 10.0, 'unid', 3500.0, 3.0, '', 1);</sql><current_tab id="0"/></tab_sql></sqlb_project>

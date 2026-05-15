@@ -2,29 +2,32 @@ package com.mistressoles.modelos;
 
 /**
  * Clase Modelo que representa un producto de "Mis Tres Soles".
- * @author Ezequiel
  */
 public class Producto {
-    // Atributos que coinciden con tu script de SQLite
+
     private int id;
     private String nombre;
-    private double stock; // Usamos double por el tipo REAL en la BD
+    private String categoria;
+    private double stock;
+    private String unidadMedida; // 'kg' o 'unid'
     private double precio;
+    private double stockMinimo;
+    private String imagenPath;
     private boolean activo;
 
-    // Constructor para inicializar el objeto con los datos de la consulta SQL
-    public Producto(int id, String nombre, double stock, double precio) {
+    // Constructor completo actualizado
+    public Producto(int id, String nombre, String categoria, double stock, String unidadMedida, double precio, double stockMinimo, String imagenPath) {
         this.id = id;
         this.nombre = nombre;
+        this.categoria = categoria;
         this.stock = stock;
+        this.unidadMedida = unidadMedida;
         this.precio = precio;
+        this.stockMinimo = stockMinimo;
+        this.imagenPath = imagenPath;
     }
 
-    /**
-     * GETTERS: Son obligatorios para que JavaFX pueda mostrar 
-     * los datos en las columnas de la tabla.
-     * @return 
-     */
+    // --- GETTERS ---
     public int getId() {
         return id;
     }
@@ -33,22 +36,68 @@ public class Producto {
         return nombre;
     }
 
+    public String getCategoria() {
+        return categoria;
+    }
+
     public double getStock() {
         return stock;
+    }
+
+    public String getUnidadMedida() {
+        return unidadMedida;
     }
 
     public double getPrecio() {
         return precio;
     }
-    
-    public boolean isActivo(){
+
+    public double getStockMinimo() {
+        return stockMinimo;
+    }
+
+    public String getImagenPath() {
+        return imagenPath;
+    }
+
+    public boolean isActivo() {
         return activo;
     }
 
-    // SETTERS: Útiles para futuras actualizaciones de stock o precio
-    public void setId(int id) { this.id = id; }
-    public void setNombre(String nombre) { this.nombre = nombre; }
-    public void setStock(double stock) { this.stock = stock; }
-    public void setPrecio(double precio) { this.precio = precio; }
-    public void setActivo(boolean activo) { this.activo = activo; }
+    // --- SETTERS ---
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public void setCategoria(String categoria) {
+        this.categoria = categoria;
+    }
+
+    public void setStock(double stock) {
+        this.stock = stock;
+    }
+
+    public void setUnidadMedida(String unidadMedida) {
+        this.unidadMedida = unidadMedida;
+    }
+
+    public void setPrecio(double precio) {
+        this.precio = precio;
+    }
+
+    public void setStockMinimo(double stockMinimo) {
+        this.stockMinimo = stockMinimo;
+    }
+
+    public void setImagenPath(String imagenPath) {
+        this.imagenPath = imagenPath;
+    }
+
+    public void setActivo(boolean activo) {
+        this.activo = activo;
+    }
 }

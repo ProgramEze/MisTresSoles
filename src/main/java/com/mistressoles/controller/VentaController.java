@@ -1,26 +1,27 @@
 package com.mistressoles.controller;
 
-import javafx.animation.PauseTransition;
-import javafx.scene.paint.Color;
-import javafx.util.Duration;
 import com.mistressoles.conexion.ConexionDB;
 import com.mistressoles.modelos.DetalleVenta;
 import com.mistressoles.modelos.Producto;
-import java.net.URL;
-import java.sql.*;
-import java.util.ResourceBundle;
+import javafx.animation.PauseTransition;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyCode;
+import javafx.scene.paint.Color;
+import javafx.util.Duration;
+
+import java.net.URL;
+import java.sql.*;
+import java.util.ResourceBundle;
 
 public class VentaController implements Initializable {
 
-    // --- LADO IZQUIERDO: BUSQUEDA ---
     @FXML
     private TextField txtBuscar;
     @FXML
@@ -28,14 +29,14 @@ public class VentaController implements Initializable {
     @FXML
     private TableColumn<Producto, String> colBusqNombre;
     @FXML
-    private TableColumn<Producto, Double> colBusqPrecio;
-    @FXML
     private TableColumn<Producto, Double> colBusqStock;
-
+    @FXML
+    private TableColumn<Producto, String> colBusqUnidad;
+    @FXML
+    private TableColumn<Producto, Double> colBusqPrecio;
     @FXML
     private TextField txtCantidad;
 
-    // --- LADO DERECHO: TICKET ---
     @FXML
     private TableView<DetalleVenta> tablaTicket;
     @FXML
@@ -51,14 +52,11 @@ public class VentaController implements Initializable {
     private Label lblTotal;
     @FXML
     private Label lblMensaje;
-
-    // --- VUELTO ---
     @FXML
     private TextField txtAbona;
     @FXML
     private Label lblVuelto;
 
-    // --- DATOS ---
     private ObservableList<Producto> listaProductos = FXCollections.observableArrayList();
     private FilteredList<Producto> listaFiltrada;
     private ObservableList<DetalleVenta> listaTicket = FXCollections.observableArrayList();
@@ -66,69 +64,45 @@ public class VentaController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         configurarTablas();
+        configurarFiltrosTexto();
         cargarProductos();
 
-        // --- NUEVO: Filtro para aceptar solo números y hasta 2 decimales ---
-        java.util.function.UnaryOperator<TextFormatter.Change> filtroDecimales = change -> {
-            String textoNuevo = change.getControlNewText();
-            // Expresión Regular: Acepta vacío, o números seguidos de un punto/coma opcional y hasta 2 dígitos
-            if (textoNuevo.matches("^\\d*([\\.,]\\d{0,2})?$")) {
-                return change; // Permite el cambio
-            }
-            return null; // Rechaza la tecla pulsada
-        };
-
-        // Aplicamos el filtro a ambos campos de texto
-        txtAbona.setTextFormatter(new TextFormatter<>(filtroDecimales));
-        txtCantidad.setTextFormatter(new TextFormatter<>(filtroDecimales));
-        // ------------------------------------------------------------------
-
-        // Buscador en tiempo real
+        // Buscador multifunción
         txtBuscar.textProperty().addListener((obs, oldVal, newVal) -> {
             listaFiltrada.setPredicate(p -> {
                 if (newVal == null || newVal.isEmpty()) {
                     return true;
                 }
-                return p.getNombre().toLowerCase().contains(newVal.toLowerCase());
+
+                String texto = newVal.toLowerCase();
+                boolean matchNombre = p.getNombre().toLowerCase().contains(texto);
+                boolean matchCategoria = p.getCategoria().toLowerCase().contains(texto);
+                boolean matchStock = String.valueOf(p.getStock()).contains(texto);
+
+                return matchNombre || matchCategoria || matchStock;
             });
         });
 
-        // Al hacer doble clic en un producto, poner foco en cantidad
         tablaBusqueda.setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) {
                 txtCantidad.requestFocus();
             }
         });
 
-        // Agregar producto con ENTER en cantidad
         txtCantidad.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) {
                 agregarProducto();
             }
         });
 
-        // Borrar fila del ticket con SUPRIMIR
         tablaTicket.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.DELETE) {
-                DetalleVenta seleccionado = tablaTicket.getSelectionModel().getSelectedItem();
-                if (seleccionado != null) {
-
-                    // --- NUEVO: Devolvemos el stock a la tabla izquierda ---
-                    Producto p = seleccionado.getProducto();
-                    p.setStock(p.getStock() + seleccionado.getCantidad());
-                    tablaBusqueda.refresh();
-                    // -------------------------------------------------------
-
-                    listaTicket.remove(seleccionado);
-                    actualizarTotal();
-                }
+                eliminarDelTicket();
             }
         });
 
-        // Calcular vuelto dinámicamente
         txtAbona.textProperty().addListener((obs, oldVal, newVal) -> calcularVuelto());
 
-        // Cobrar al presionar ENTER en "Abona con" (Llama a la misma validación que el botón)
         txtAbona.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) {
                 finalizarVenta();
@@ -138,18 +112,19 @@ public class VentaController implements Initializable {
 
     private void configurarTablas() {
         colBusqNombre.setCellValueFactory(new PropertyValueFactory<>("nombre"));
-        colBusqPrecio.setCellValueFactory(new PropertyValueFactory<>("precio"));
         colBusqStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
+        colBusqUnidad.setCellValueFactory(new PropertyValueFactory<>("unidadMedida"));
+        colBusqPrecio.setCellValueFactory(new PropertyValueFactory<>("precio"));
 
         colTicketProducto.setCellValueFactory(new PropertyValueFactory<>("nombreProducto"));
         colTicketCant.setCellValueFactory(new PropertyValueFactory<>("cantidad"));
         colTicketPrecio.setCellValueFactory(new PropertyValueFactory<>("precioUnitario"));
         colTicketSubtotal.setCellValueFactory(new PropertyValueFactory<>("subtotal"));
 
-        // Bloquear columnas
         colBusqNombre.setReorderable(false);
         colBusqPrecio.setReorderable(false);
         colBusqStock.setReorderable(false);
+        colBusqUnidad.setReorderable(false);
         colTicketProducto.setReorderable(false);
         colTicketCant.setReorderable(false);
         colTicketPrecio.setReorderable(false);
@@ -158,22 +133,161 @@ public class VentaController implements Initializable {
         tablaBusqueda.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         tablaTicket.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         tablaTicket.setItems(listaTicket);
+
+        // Formato para los precios de búsqueda
+        colBusqPrecio.setCellFactory(c -> new TableCell<Producto, Double>() {
+            @Override
+            protected void updateItem(Double precio, boolean empty) {
+                super.updateItem(precio, empty);
+                if (empty || precio == null) {
+                    setText(null);
+                } else {
+                    setText(String.format("$ %.2f", precio));
+                }
+            }
+        });
+
+        // Formato para los precios unitarios del ticket
+        colTicketPrecio.setCellFactory(c -> new TableCell<DetalleVenta, Double>() {
+            @Override
+            protected void updateItem(Double precio, boolean empty) {
+                super.updateItem(precio, empty);
+                if (empty || precio == null) {
+                    setText(null);
+                } else {
+                    setText(String.format("$ %.2f", precio));
+                }
+            }
+        });
+
+        // Formato para los subtotales del ticket
+        colTicketSubtotal.setCellFactory(c -> new TableCell<DetalleVenta, Double>() {
+            @Override
+            protected void updateItem(Double sub, boolean empty) {
+                super.updateItem(sub, empty);
+                if (empty || sub == null) {
+                    setText(null);
+                } else {
+                    setText(String.format("$ %.2f", sub));
+                }
+            }
+        });
+
+        // --- PRECISIÓN DE BALANZA: 3 DECIMALES ---
+        // Stock de Búsqueda: kg vs unid
+        colBusqStock.setCellFactory(columna -> new TableCell<Producto, Double>() {
+            @Override
+            protected void updateItem(Double stock, boolean empty) {
+                super.updateItem(stock, empty);
+                if (empty || stock == null || getTableRow() == null || getTableRow().getItem() == null) {
+                    setText(null);
+                } else {
+                    Producto p = getTableRow().getItem();
+                    if ("unid".equalsIgnoreCase(p.getUnidadMedida())) {
+                        setText(String.format("%.0f", stock));
+                    } else {
+                        setText(String.format("%.3f", stock)); // 3 decimales
+                    }
+                }
+            }
+        });
+
+        // Stock del Ticket: kg vs unid
+        colTicketCant.setCellFactory(columna -> new TableCell<DetalleVenta, Double>() {
+            @Override
+            protected void updateItem(Double cantidad, boolean empty) {
+                super.updateItem(cantidad, empty);
+                if (empty || cantidad == null || getTableRow() == null || getTableRow().getItem() == null) {
+                    setText(null);
+                } else {
+                    DetalleVenta dv = getTableRow().getItem();
+                    if ("unid".equalsIgnoreCase(dv.getProducto().getUnidadMedida())) {
+                        setText(String.format("%.0f", cantidad));
+                    } else {
+                        setText(String.format("%.3f", cantidad)); // 3 decimales
+                    }
+                }
+            }
+        });
+
+        // Ordenamiento Inteligente de Stock
+        colBusqStock.setComparator((s1, s2) -> {
+            boolean e1 = (s1 % 1 == 0);
+            boolean e2 = (s2 % 1 == 0);
+            if (e1 && !e2) {
+                return -1;
+            }
+            if (!e1 && e2) {
+                return 1;
+            }
+            return Double.compare(s1, s2);
+        });
+
+        ContextMenu menuTicket = new ContextMenu();
+        MenuItem itemEliminar = new MenuItem("🗑️ Eliminar del ticket");
+        itemEliminar.setOnAction(e -> eliminarDelTicket());
+        menuTicket.getItems().add(itemEliminar);
+        tablaTicket.setContextMenu(menuTicket);
+    }
+
+    private void eliminarDelTicket() {
+        DetalleVenta seleccionado = tablaTicket.getSelectionModel().getSelectedItem();
+        if (seleccionado != null) {
+            Producto p = seleccionado.getProducto();
+            p.setStock(p.getStock() + seleccionado.getCantidad());
+            tablaBusqueda.refresh();
+            listaTicket.remove(seleccionado);
+            actualizarTotal();
+        }
+    }
+
+    private void configurarFiltrosTexto() {
+        // Filtro para el campo ABONA (Dinero = 2 decimales)
+        java.util.function.UnaryOperator<TextFormatter.Change> filtroDinero = change -> {
+            String textoNuevo = change.getControlNewText();
+            if (textoNuevo.matches("^\\d*([\\.,]\\d{0,2})?$")) {
+                return change;
+            }
+            return null;
+        };
+        txtAbona.setTextFormatter(new TextFormatter<>(filtroDinero));
+
+        // Filtro para el campo CANTIDAD (Peso = 3 decimales)
+        java.util.function.UnaryOperator<TextFormatter.Change> filtroPeso = change -> {
+            String textoNuevo = change.getControlNewText();
+            if (textoNuevo.matches("^\\d*([\\.,]\\d{0,3})?$")) {
+                return change;
+            }
+            return null;
+        };
+        txtCantidad.setTextFormatter(new TextFormatter<>(filtroPeso));
     }
 
     private void cargarProductos() {
         listaProductos.clear();
-        // --- ACÁ ESTÁ EL CAMBIO: Agregamos "AND stock_actual > 0" ---
         String sql = "SELECT * FROM productos WHERE activo = 1 AND stock_actual > 0";
-        // -------------------------------------------------------------
         try (Connection conn = ConexionDB.conectar(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                listaProductos.add(new Producto(
-                        rs.getInt("id_producto"), rs.getString("nombre"),
-                        rs.getDouble("stock_actual"), rs.getDouble("precio_venta")
-                ));
+                Producto p = new Producto(
+                        rs.getInt("id_producto"),
+                        rs.getString("nombre"),
+                        rs.getString("categoria"),
+                        rs.getDouble("stock_actual"),
+                        rs.getString("unidad_medida"),
+                        rs.getDouble("precio_venta"),
+                        rs.getDouble("stock_minimo"),
+                        rs.getString("imagen_path")
+                );
+                p.setActivo(true);
+                listaProductos.add(p);
             }
+
             listaFiltrada = new FilteredList<>(listaProductos, p -> true);
-            tablaBusqueda.setItems(listaFiltrada);
+            SortedList<Producto> listaOrdenada = new SortedList<>(listaFiltrada);
+            listaOrdenada.comparatorProperty().bind(tablaBusqueda.comparatorProperty());
+
+            tablaBusqueda.setItems(listaOrdenada);
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -199,16 +313,13 @@ public class VentaController implements Initializable {
                 throw new NumberFormatException();
             }
 
-            // Verificamos si alcanza el stock (que ahora se actualiza en vivo)
             if (cant > p.getStock()) {
-                mostrarAlerta("¡Atención! No hay stock suficiente.\nStock disponible de " + p.getNombre() + ": " + p.getStock());
+                mostrarAlerta("¡Atención! No hay stock suficiente.\nStock disponible: " + String.format(p.getUnidadMedida().equals("unid") ? "%.0f" : "%.3f", p.getStock()) + " " + p.getUnidadMedida());
                 return;
             }
 
-            // --- NUEVO: Descontamos el stock en memoria y refrescamos la tabla ---
             p.setStock(p.getStock() - cant);
             tablaBusqueda.refresh();
-            // ----------------------------------------------------------------------
 
             listaTicket.add(new DetalleVenta(p, cant));
             actualizarTotal();
@@ -260,40 +371,27 @@ public class VentaController implements Initializable {
 
         double totalVenta = listaTicket.stream().mapToDouble(DetalleVenta::getSubtotal).sum();
 
-        // --- VALIDACIÓN DE PAGO ---
         try {
             String abonaStr = txtAbona.getText().replace(",", ".");
-
-            // --- OPCIÓN ESTRICTA (Si preferís obligar a escribir, descomentá esto y borrá lo de abajo) ---
-            /*
             if (abonaStr.isEmpty()) {
-                mostrarAlerta("Por favor, ingresa el monto con el que abona el cliente.");
-                txtAbona.requestFocus();
-                return;
-            }
-             */
-            // --- OPCIÓN ÁGIL (Asumimos pago exacto si está vacío) ---
-            if (abonaStr.isEmpty()) {
-                abonaStr = String.valueOf(totalVenta); // Asumimos el total
-                txtAbona.setText(abonaStr); // Lo mostramos visualmente en el campo
+                abonaStr = String.valueOf(totalVenta);
+                txtAbona.setText(abonaStr);
             }
 
             double abona = Double.parseDouble(abonaStr);
             if (abona < totalVenta) {
                 mostrarAlerta("El monto ingresado es insuficiente.\nFaltan: $ " + String.format("%.2f", totalVenta - abona));
-                return; // Cortamos la ejecución acá, NO SE COBRA
+                return;
             }
-
         } catch (NumberFormatException e) {
             mostrarAlerta("Ingresa un monto válido para cobrar.");
             return;
         }
-        // ------------------------------------------
 
-        // ... Acá sigue intacto tu código de base de datos (String sqlVenta = ...) ...
         String sqlVenta = "INSERT INTO ventas (total) VALUES (?)";
         String sqlDetalle = "INSERT INTO detalle_ventas (id_venta, id_producto, cantidad, precio_unitario, subtotal) VALUES (?, ?, ?, ?, ?)";
         String sqlStock = "UPDATE productos SET stock_actual = stock_actual - ? WHERE id_producto = ?";
+        String sqlMovimiento = "INSERT INTO movimientos (tipo, concepto, monto, categoria_contable) VALUES ('INGRESO', ?, ?, 'Ventas')";
 
         try (Connection conn = ConexionDB.conectar()) {
             conn.setAutoCommit(false);
@@ -304,6 +402,11 @@ public class VentaController implements Initializable {
 
                 ResultSet rsKeys = pstmtVenta.getGeneratedKeys();
                 int idVenta = rsKeys.next() ? rsKeys.getInt(1) : 0;
+
+                PreparedStatement pstmtMov = conn.prepareStatement(sqlMovimiento);
+                pstmtMov.setString(1, "Venta en mostrador (Ticket #" + idVenta + ")");
+                pstmtMov.setDouble(2, totalVenta);
+                pstmtMov.executeUpdate();
 
                 PreparedStatement pstmtDetalle = conn.prepareStatement(sqlDetalle);
                 PreparedStatement pstmtStock = conn.prepareStatement(sqlStock);
@@ -323,9 +426,10 @@ public class VentaController implements Initializable {
 
                 pstmtDetalle.executeBatch();
                 pstmtStock.executeBatch();
+
                 conn.commit();
 
-                mostrarMensajeExito("✅ Venta registrada: $" + totalVenta);
+                mostrarMensajeExito("✅ Venta registrada: $" + String.format("%.2f", totalVenta));
                 listaTicket.clear();
                 lblTotal.setText("$ 0.00");
                 txtAbona.clear();
@@ -335,7 +439,7 @@ public class VentaController implements Initializable {
             } catch (SQLException e) {
                 conn.rollback();
                 e.printStackTrace();
-                mostrarAlerta("❌ Error al registrar la venta.");
+                mostrarAlerta("❌ Error crítico al guardar.");
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -344,13 +448,11 @@ public class VentaController implements Initializable {
 
     @FXML
     private void cancelarVenta() {
-        // --- NUEVO: Devolvemos el stock de TODOS los productos del carrito ---
         for (DetalleVenta dv : listaTicket) {
             Producto p = dv.getProducto();
             p.setStock(p.getStock() + dv.getCantidad());
         }
         tablaBusqueda.refresh();
-        // ---------------------------------------------------------------------
 
         listaTicket.clear();
         actualizarTotal();
